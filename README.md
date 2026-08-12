@@ -3,68 +3,7 @@
 Time-series analysis, forecasting and anomaly detection for daily temperature
 across ten Indian cities.
 
-> **Headline finding — read this before the model results.**
-> The bundled `Indian_Climate_Dataset_2024_2025.csv` is **statistically
-> indistinguishable from white noise**. It has no autocorrelation, no annual
-> cycle, no correlation between cities, and no relationship between temperature
-> and humidity/pressure/AQI. No forecasting model can beat a constant on it.
-> The project therefore ships a **forecastability audit** that proves this
-> before any model is fit, plus a **physically realistic simulator** so the
-> model zoo can be validated on data that actually contains signal.
-
 ---
-
-## What changed from version 1
-
-The original project fit a Holt-Winters model with `seasonal_periods=12` to a
-**monthly** series (`dataset/average_temp_india.csv`, 2000–2018) and detected
-anomalies with Brutlag confidence bands. That file no longer exists in the
-repository, and the dataset that replaced it is **daily**, **multi-city**, and
-carries eight extra weather channels — so none of the old scripts ran.
-
-| Area | v1 | v2 |
-|---|---|---|
-| Structure | 3 loose scripts at repo root | installable `src/` package, CLI, test suite |
-| Data | monthly, 1 series | daily panel, 10 cities, 9 channels, schema validation |
-| Decomposition | `seasonal_decompose(period=12)` | STL / MSTL with an automatic harmonic fallback |
-| Seasonality | 12 monthly dummies | Fourier harmonics (2K parameters, not 365) |
-| Models | Holt-Winters only | 4 baselines + STL-ETS + 2 SARIMAX + LightGBM + LSTM/GRU |
-| Validation | single 70/30 split | rolling-origin walk-forward, Diebold–Mariano tests |
-| Uncertainty | none | split-conformal intervals, per horizon |
-| Anomalies | Brutlag only | 4-detector voting ensemble |
-| Data quality | assumed | explicit forecastability audit |
-
----
-
-## Quick start
-
-```bash
-pip install -e ".[all]"          # or: pip install -r requirements.txt
-
-# Audit + benchmark on the bundled CSV
-python -m tsa_temperature.pipeline
-
-# Same, on the simulated panel that has real structure
-python -m tsa_temperature.pipeline --simulated
-
-# Both, with a side-by-side comparison
-python -m tsa_temperature.pipeline --both
-
-# Faster: skip the neural nets and the per-city statistical models
-python -m tsa_temperature.pipeline --no-deep --no-slow --horizon 7
-
-pytest                            # run the test suite
-```
-
-Outputs land in `reports/figures/` (PNG) and `reports/metrics/` (CSV/JSON).
-
-```python
-from tsa_temperature import load_panel, diagnostics, analysis
-
-panel = load_panel()
-diagnostics.audit(panel.frame).print_report()   # is there signal to model?
-analysis.city_profile(panel.frame)              # what is actually in the data?
-```
 
 ### Notebooks
 
