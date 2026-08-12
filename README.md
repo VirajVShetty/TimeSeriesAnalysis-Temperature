@@ -59,11 +59,19 @@ pytest                            # run the test suite
 Outputs land in `reports/figures/` (PNG) and `reports/metrics/` (CSV/JSON).
 
 ```python
-from tsa_temperature import load_panel, diagnostics
+from tsa_temperature import load_panel, diagnostics, analysis
 
 panel = load_panel()
-diagnostics.audit(panel.frame).print_report()
+diagnostics.audit(panel.frame).print_report()   # is there signal to model?
+analysis.city_profile(panel.frame)              # what is actually in the data?
 ```
+
+### Notebooks
+
+| Notebook | Scope |
+|---|---|
+| `notebooks/climate_descriptive_analysis.ipynb` | **Analysis only.** Distributions, city and monthly profiles, diurnal range, extremes, correlations, air quality. No models. |
+| `notebooks/temperature_timeseries_analysis.ipynb` | Forecasting: audit, decomposition, model benchmark, conformal intervals, anomaly detection. |
 
 ---
 
@@ -73,6 +81,7 @@ diagnostics.audit(panel.frame).print_report()
 src/tsa_temperature/
 ├── config.py        # every tunable: paths, schema, protocol, hyper-parameters
 ├── data.py          # loading, schema + physical validation, calendar filling, splits
+├── analysis.py      # model-free descriptive statistics (profiles, distributions, extremes)
 ├── diagnostics.py   # forecastability audit (run this first)
 ├── simulate.py      # realistic reference panel for pipeline validation
 ├── eda.py           # STL / MSTL / harmonic decomposition, ADF + KPSS, ACF/PACF
@@ -95,7 +104,36 @@ legacy/              # the original v1 scripts, kept for reference
 
 ---
 
-## 1. The forecastability audit
+## 1. Descriptive analysis
+
+`analysis.py` is deliberately model-free — it describes the data rather than
+fitting anything. `notebooks/climate_descriptive_analysis.ipynb` walks through
+it. Because descriptive statistics compute happily on any numbers, each result
+is paired with a plausibility check against Indian climatology.
+
+Eight independent findings from that pass, all pointing the same way:
+
+| Finding | Observed | Real Indian climate |
+|---|---|---|
+| Distribution shape | uniform (excess kurtosis ≈ −1.2) | seasonal modes |
+| Seasonal amplitude (hottest − coldest month) | 1.5–3.6 °C | 6–20 °C |
+| Variance explained by month-of-year | 0.7–2.6% | 50–85% |
+| Coldest month | Dec, Feb, **Nov**, inconsistent | Dec–Jan consistently |
+| Diurnal range spread across cities | 0.26 °C | ~9 °C |
+| Heat-day clustering vs chance | ≈ 1.0 (independent) | strongly clustered |
+| Covariate correlation with temperature | \|r\| < 0.03 | humidity/cloud/pressure all strong |
+| Cross-city correlation | −0.006 | 0.7–0.9 within a region |
+
+`climatology_plausibility()` deliberately requires more than a matching
+amplitude. Twelve monthly means of `uniform(18, 42)` noise spread about 3 °C by
+chance — half of Mumbai's genuine 6 °C amplitude — so an amplitude-only test
+lets noise pass as a low-amplitude coastal city. The verdict therefore also
+requires month-of-year to explain a meaningful share of variance, which is
+~0.02 for random data and 0.5–0.85 for real temperature.
+
+---
+
+## 2. The forecastability audit
 
 `diagnostics.audit()` runs five independent checks before any model is fit.
 
@@ -121,7 +159,7 @@ leaderboard can always be produced, and it will always look meaningful.
 
 ---
 
-## 2. Models
+## 3. Models
 
 All models implement one contract — `fit(train_panel)` then
 `predict(horizon)` — so the backtest harness treats a naive rule and an LSTM
@@ -157,7 +195,7 @@ distribution-free, with finite-sample coverage guarantees.
 
 ---
 
-## 3. Evaluation protocol
+## 4. Evaluation protocol
 
 Rolling-origin (walk-forward) backtesting: the model is refit at each of
 several successive cutoffs and scored on the following 14 days.
@@ -175,7 +213,7 @@ test using the Harvey–Leybourne–Newbold small-sample correction.
 
 ---
 
-## 4. Results on the simulated reference panel
+## 5. Results on the simulated reference panel
 
 Six rolling origins, 14-day horizon, 10 cities — 840 forecast/actual pairs.
 These numbers validate that the code is correct; they are **not** claims about
@@ -205,7 +243,7 @@ Three things worth reading off this table:
 
 ---
 
-## 5. Anomaly detection
+## 6. Anomaly detection
 
 Four detectors vote; a day is flagged only when at least two agree.
 
@@ -223,7 +261,7 @@ fortnight around it is unlike anything else in the record.
 
 ---
 
-## 6. Bugs found and fixed along the way
+## 7. Bugs found and fixed along the way
 
 These are documented because each one silently produced plausible-looking but
 wrong output.
@@ -275,7 +313,7 @@ estimated from the training series alone.
 
 ---
 
-## 7. Guarding against leakage
+## 8. Guarding against leakage
 
 Features are indexed by **forecast origin** `t`; targets are `y[t+h]`.
 
@@ -293,7 +331,7 @@ Features are indexed by **forecast origin** `t`; targets are `y[t+h]`.
 
 ---
 
-## 8. Limitations
+## 9. Limitations
 
 - **Two years of data.** Two annual cycles cannot identify a climate trend,
   support STL at `period=365`, or give the seasonal-naive baseline a full

@@ -10,7 +10,7 @@ Run the full benchmark from the command line::
 
     python -m tsa_temperature.pipeline --horizon 14 --origins 8
 """
-from . import diagnostics
+from . import analysis, diagnostics
 from .anomaly import detect_anomalies, detect_anomalies_panel
 from .backtest import BacktestResult, calibrate_conformal, walk_forward
 from .conformal import SplitConformal
@@ -29,6 +29,7 @@ __all__ = [
     "calibrate_conformal",
     "detect_anomalies",
     "detect_anomalies_panel",
+    "analysis",
     "diagnostics",
     "evaluate_point",
     "leaderboard",

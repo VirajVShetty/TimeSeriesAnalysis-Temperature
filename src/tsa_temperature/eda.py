@@ -22,12 +22,20 @@ overfit the noise.
 """
 from __future__ import annotations
 
+import sys
 import warnings
 from dataclasses import dataclass
 
 import matplotlib
 
-matplotlib.use("Agg")
+# Only force the headless Agg backend when running outside an interactive
+# session. Calling ``matplotlib.use("Agg")`` unconditionally at import time
+# overrides a notebook's inline backend, which suppresses figure display.
+if not (
+    "IPython" in sys.modules
+    and getattr(sys.modules["IPython"], "get_ipython", lambda: None)() is not None
+):
+    matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
