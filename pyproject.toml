@@ -1,0 +1,63 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tsa-temperature"
+version = "2.0.0"
+description = "Time-series analysis, forecasting and anomaly detection for Indian city temperatures"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { file = "LICENSE" }
+authors = [{ name = "Viraj Shetty" }]
+keywords = ["time-series", "forecasting", "climate", "anomaly-detection", "india"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering :: Information Analysis",
+]
+
+dependencies = [
+    "numpy>=1.24",
+    "pandas>=2.0",
+    "scipy>=1.10",
+    "matplotlib>=3.7",
+    "statsmodels>=0.14",
+    "scikit-learn>=1.3",
+    "lightgbm>=4.0",
+]
+
+[project.optional-dependencies]
+deep = ["torch>=2.0"]
+dev = ["pytest>=7.4", "pytest-cov>=4.1", "ruff>=0.4", "jupyter>=1.0", "nbformat>=5.9"]
+all = ["torch>=2.0", "pytest>=7.4", "pytest-cov>=4.1", "ruff>=0.4", "jupyter>=1.0"]
+
+[project.scripts]
+tsa-temperature = "tsa_temperature.pipeline:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = "-q --strict-markers"
+filterwarnings = [
+    "ignore::FutureWarning",
+    "ignore::UserWarning",
+    "ignore::RuntimeWarning",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+# B905 (`zip()` without `strict=`) is disabled on purpose: its autofix inserts a
+# `strict=` keyword that only exists on Python 3.10+, and silently breaks the
+# package on 3.9. Every `zip()` here pairs fixed-length literals anyway.
+ignore = ["E501", "B008", "B905"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["B011"]
