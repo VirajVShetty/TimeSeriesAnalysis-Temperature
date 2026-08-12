@@ -1,4 +1,4 @@
-# Temperature-TSA
+# India Temperature Time Series Analysis 
 
 Time-series analysis, forecasting and anomaly detection for daily temperature
 across ten Indian cities.
